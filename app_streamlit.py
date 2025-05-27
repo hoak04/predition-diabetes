@@ -1,12 +1,11 @@
+
 import streamlit as st
 import pandas as pd
-import pickle
+import joblib
 
-# Carregar modelo e scaler usando pickle
-with open("modelo/modelo_randomforest_diabetes.pkl", "rb") as f:
-    modelo = pickle.load(f)
-with open("modelo/scaler.pkl", "rb") as f:
-    scaler = pickle.load(f)
+# Carregar modelo e scaler
+modelo = joblib.load("modelo/modelo_randomforest_diabetes.pkl")
+scaler = joblib.load("modelo/scaler.pkl")
 
 st.set_page_config(page_title="Preditor de Diabetes", page_icon="🩺")
 st.title("🩺 Preditor de Diabetes")

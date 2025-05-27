@@ -1,7 +1,7 @@
 
 import streamlit as st
 import pandas as pd
-import joblib
+import joblib 
 
 # Carregar modelo e scaler
 modelo = joblib.load("modelo/modelo_randomforest_diabetes.pkl")

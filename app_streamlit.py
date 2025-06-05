@@ -1,14 +1,31 @@
-
 import streamlit as st
 import pandas as pd
 import joblib
+import requests
+import os
 
-modelo = joblib.load("modelo/modelo_randomforest_diabetes.pkl")
-scaler = joblib.load("modelo/scaler.pkl")
+# Função para baixar e carregar arquivos .pkl
+@st.cache_resource
+def carregar_modelo_remoto(url, nome_arquivo):
+    if not os.path.exists(nome_arquivo):
+        r = requests.get(url)
+        with open(nome_arquivo, 'wb') as f:
+            f.write(r.content)
+    return joblib.load(nome_arquivo)
 
+# URLs diretas do Google Drive
+url_modelo = "https://drive.google.com/uc?export=download&id=1bnOTS_hydnw6M925PqJCSqVoniQmT_BE"
+url_scaler = "https://drive.google.com/uc?export=download&id=14B1EO0nN_L2flEJzZBNESTAjDiXEdJ5O"
+
+# Carregar modelo e scaler
+modelo = carregar_modelo_remoto(url_modelo, "modelo.pkl")
+scaler = carregar_modelo_remoto(url_scaler, "scaler.pkl")
+
+# Interface Streamlit
 st.set_page_config(page_title="Preditor de Diabetes", page_icon="🩺")
 st.title("🩺 Preditor de Diabetes")
 
+# Inputs
 age = st.slider("Idade", 1, 120, 45)
 bmi = st.number_input("IMC", 10.0, 60.0, 28.5)
 waist = st.number_input("Cintura (cm)", 50.0, 200.0, 90.0)
@@ -23,6 +40,7 @@ calories = st.number_input("Calorias ingeridas", 1000, 5000, 2200)
 bp_sys = st.number_input("Pressão Sistólica", 80, 200, 120)
 bp_dia = st.number_input("Pressão Diastólica", 40, 130, 75)
 
+# Exemplo de entrada com colunas binárias simuladas
 entrada = {
     "Age": age,
     "BMI": bmi,
@@ -51,15 +69,15 @@ entrada = {
     "Blood_Pressure_Systolic": bp_sys
 }
 
+# Converter para DataFrame
 df = pd.DataFrame([entrada])
-colunas_esperadas = list(entrada.keys())
-df = df.reindex(columns=colunas_esperadas)
 
 # Verificações
 st.subheader("🔎 Verificação")
 st.write("Colunas enviadas:", df.columns.tolist())
 st.write("Shape:", df.shape)
 
+# Predição
 try:
     dados_normalizados = scaler.transform(df)
     if st.button("🔍 Prever"):

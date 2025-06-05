@@ -4,6 +4,8 @@ import joblib
 import requests
 import os
 
+st.set_page_config(page_title="Preditor de Diabetes", page_icon="🩺")
+st.title("🩺 Preditor de Diabetes")
 # Função para baixar e carregar arquivos .pkl
 @st.cache_resource
 def carregar_modelo_remoto(url, nome_arquivo):
@@ -22,8 +24,7 @@ modelo = carregar_modelo_remoto(url_modelo, "modelo.pkl")
 scaler = carregar_modelo_remoto(url_scaler, "scaler.pkl")
 
 # Interface Streamlit
-st.set_page_config(page_title="Preditor de Diabetes", page_icon="🩺")
-st.title("🩺 Preditor de Diabetes")
+
 
 # Inputs
 age = st.slider("Idade", 1, 120, 45)

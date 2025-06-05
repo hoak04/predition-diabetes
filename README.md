@@ -1,0 +1,1 @@
+App Streamlit com as 25 colunas exatas esperadas pelo modelo.

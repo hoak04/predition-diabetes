@@ -88,17 +88,31 @@ st.write(df)
 # Predição
 try:
     dados_normalizados = scaler.transform(df)
+
     if st.button("🔍 Prever"):
         proba = modelo.predict_proba(dados_normalizados)[0]
-        prob_diabetes = round(proba[1] * 100, 2)  # classe 1 = diabetes
+        prob_diabetes = round(proba[1] * 100, 2)
         prob_normal = round(proba[0] * 100, 2)
 
+        # Resultado da previsão
         if prob_diabetes >= 50:
             st.error(f"⚠️ Chance de diabetes: {prob_diabetes}%")
         else:
             st.success(f"🟢 Baixa chance de diabetes ({prob_diabetes}%)")
-        
+
         st.write(f"🔹 Sem diabetes: {prob_normal}%")
         st.write(f"🔸 Com diabetes: {prob_diabetes}%")
+
+        # Mostrar as colunas mais influentes
+        importancias = modelo.feature_importances_
+        df_importancia = pd.DataFrame({
+            'feature': colunas_modelo,
+            'importancia': importancias
+        })
+
+        top_features = df_importancia.sort_values(by="importancia", ascending=False).head(5)
+        st.subheader("📊 Variáveis mais influentes nesta previsão")
+        st.table(top_features)
+
 except Exception as e:
     st.error(f"Erro na predição: {e}")

@@ -89,8 +89,16 @@ st.write(df)
 try:
     dados_normalizados = scaler.transform(df)
     if st.button("🔍 Prever"):
-        pred = modelo.predict(dados_normalizados)[0]
-        st.success("✅ Diabetes detectado!" if pred == 1 else "🟢 Sem sinais de diabetes.")
+        proba = modelo.predict_proba(dados_normalizados)[0]
+        prob_diabetes = round(proba[1] * 100, 2)  # classe 1 = diabetes
+        prob_normal = round(proba[0] * 100, 2)
+
+        if prob_diabetes >= 50:
+            st.error(f"⚠️ Chance de diabetes: {prob_diabetes}%")
+        else:
+            st.success(f"🟢 Baixa chance de diabetes ({prob_diabetes}%)")
+        
+        st.write(f"🔹 Sem diabetes: {prob_normal}%")
+        st.write(f"🔸 Com diabetes: {prob_diabetes}%")
 except Exception as e:
     st.error(f"Erro na predição: {e}")
-

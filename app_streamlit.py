@@ -91,15 +91,6 @@ try:
         st.write(f"🔹 Sem diabetes: {prob_normal}%")
         st.write(f"🔸 Com diabetes: {prob_diabetes}%")
 
-        importancias = modelo.feature_importances_
-        df_importancia = pd.DataFrame({
-            'feature': colunas_modelo,
-            'importancia': importancias
-        })
-        top_features = df_importancia.sort_values(by="importancia", ascending=False).head(5)
-        st.subheader("📊 Variáveis mais influentes")
-        st.table(top_features)
-
         st.subheader("💡 Sugestões para reduzir o risco")
         sugestoes = []
 

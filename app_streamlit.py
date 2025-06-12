@@ -94,7 +94,7 @@ try:
         prob_diabetes = round(proba[1] * 100, 2)
         prob_normal = round(proba[0] * 100, 2)
 
-        # Resultado da previsão
+        # Resultado da predição
         if prob_diabetes >= 50:
             st.error(f"⚠️ Chance de diabetes: {prob_diabetes}%")
         else:
@@ -103,7 +103,7 @@ try:
         st.write(f"🔹 Sem diabetes: {prob_normal}%")
         st.write(f"🔸 Com diabetes: {prob_diabetes}%")
 
-        # Mostrar as colunas mais influentes
+        # Importância das variáveis
         importancias = modelo.feature_importances_
         df_importancia = pd.DataFrame({
             'feature': colunas_modelo,
@@ -114,5 +114,25 @@ try:
         st.subheader("📊 Variáveis mais influentes nesta previsão")
         st.table(top_features)
 
+        # Sugestões com base nas variáveis
+        st.subheader("💡 Sugestões para reduzir o risco")
+        sugestoes = []
+
+        if entrada["BMI"] > 25:
+            sugestoes.append(f"• Reduzir o IMC (atualmente {entrada['BMI']:.1f}) para abaixo de 25.")
+        if entrada["Fasting_Blood_Glucose"] > 100:
+            sugestoes.append(f"• Reduzir a glicose de jejum (atualmente {entrada['Fasting_Blood_Glucose']}) para < 100 mg/dL.")
+        if entrada["HbA1c"] > 5.7:
+            sugestoes.append(f"• Reduzir HbA1c (atualmente {entrada['HbA1c']}) para < 5.7.")
+        if entrada["Cholesterol_LDL"] > 130:
+            sugestoes.append(f"• Reduzir o colesterol LDL (atualmente {entrada['Cholesterol_LDL']}) para < 130 mg/dL.")
+        if entrada["Waist_Circumference"] > 102:
+            sugestoes.append(f"• Reduzir a circunferência da cintura (atualmente {entrada['Waist_Circumference']} cm) para < 102 cm.")
+
+        if sugestoes:
+            for s in sugestoes:
+                st.markdown(s)
+        else:
+            st.markdown("✅ Nenhuma recomendação específica — seus principais indicadores estão dentro de padrões saudáveis.")
 except Exception as e:
     st.error(f"Erro na predição: {e}")

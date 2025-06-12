@@ -1,13 +1,17 @@
+
 import streamlit as st
 import pandas as pd
 import joblib
 import requests
 import os
+from datetime import datetime
 
-# Configuração da página deve ser o primeiro comando Streamlit
 st.set_page_config(page_title="Preditor de Diabetes", page_icon="🩺")
 
-# Função para carregar arquivos .pkl de URLs
+# URLs dos arquivos
+url_modelo = "https://drive.google.com/uc?export=download&id=1bnOTS_hydnw6M925PqJCSqVoniQmT_BE"
+url_scaler = "https://drive.google.com/uc?export=download&id=14B1EO0nN_L2flEJzZBNESTAjDiXEdJ5O"
+
 @st.cache_resource
 def carregar_modelo_remoto(url, nome_arquivo):
     if not os.path.exists(nome_arquivo):
@@ -16,15 +20,9 @@ def carregar_modelo_remoto(url, nome_arquivo):
             f.write(r.content)
     return joblib.load(nome_arquivo)
 
-# URLs diretas dos arquivos no Google Drive
-url_modelo = "https://drive.google.com/uc?export=download&id=1bnOTS_hydnw6M925PqJCSqVoniQmT_BE"
-url_scaler = "https://drive.google.com/uc?export=download&id=14B1EO0nN_L2flEJzZBNESTAjDiXEdJ5O"
-
-# Carregamento do modelo e scaler
 modelo = carregar_modelo_remoto(url_modelo, "modelo.pkl")
 scaler = carregar_modelo_remoto(url_scaler, "scaler.pkl")
 
-# Lista EXATA das colunas usadas no treinamento
 colunas_modelo = [
     "Age", "BMI", "Waist_Circumference", "Fasting_Blood_Glucose", "HbA1c",
     "Blood_Pressure_Systolic", "Blood_Pressure_Diastolic", "Cholesterol_Total",
@@ -37,10 +35,8 @@ colunas_modelo = [
     "Smoking_Status_Current", "Smoking_Status_Former", "Smoking_Status_Never"
 ]
 
-# Interface de entrada do usuário
 st.title("🩺 Preditor de Diabetes")
 
-# Campos numéricos
 entrada = {
     "Age": st.slider("Idade", 1, 120, 45),
     "BMI": st.number_input("IMC", 10.0, 60.0, 28.5),
@@ -56,11 +52,7 @@ entrada = {
     "Serum_Urate": st.number_input("Ácido Úrico", 1.0, 10.0, 5.2),
     "Dietary_Intake_Calories": st.number_input("Calorias ingeridas", 1000, 5000, 2200),
     "Family_History_of_Diabetes": 1,
-    "Previous_Gestational_Diabetes": 0
-}
-
-# Simulação de categorias binárias — você pode adaptar com seletores
-entrada.update({
+    "Previous_Gestational_Diabetes": 0,
     "Sex_Male_Female": 0,
     "Sex_Male_Male": 1,
     "Ethnicity_Asian": 0,
@@ -75,23 +67,98 @@ entrada.update({
     "Smoking_Status_Current": 0,
     "Smoking_Status_Former": 0,
     "Smoking_Status_Never": 1
-})
+}
 
-# Construir o DataFrame e reordenar com as colunas corretas
 df = pd.DataFrame([entrada])
 df = df.reindex(columns=colunas_modelo, fill_value=0)
 
-# Verificação visual
 st.subheader("🔎 Dados para predição")
 st.write(df)
 
-# Predição
 try:
     dados_normalizados = scaler.transform(df)
+
     if st.button("🔍 Prever"):
-        pred = modelo.predict(dados_normalizados)[0]
-        st.success("✅ Diabetes detectado!" if pred == 1 else "🟢 Sem sinais de diabetes.")
+        proba = modelo.predict_proba(dados_normalizados)[0]
+        prob_diabetes = round(proba[1] * 100, 2)
+        prob_normal = round(proba[0] * 100, 2)
+
+        if prob_diabetes >= 50:
+            st.error(f"⚠️ Chance de diabetes: {prob_diabetes}%")
+        else:
+            st.success(f"🟢 Baixa chance de diabetes ({prob_diabetes}%)")
+
+        st.write(f"🔹 Sem diabetes: {prob_normal}%")
+        st.write(f"🔸 Com diabetes: {prob_diabetes}%")
+
+        importancias = modelo.feature_importances_
+        df_importancia = pd.DataFrame({
+            'feature': colunas_modelo,
+            'importancia': importancias
+        })
+        top_features = df_importancia.sort_values(by="importancia", ascending=False).head(5)
+        st.subheader("📊 Variáveis mais influentes")
+        st.table(top_features)
+
+        st.subheader("💡 Sugestões para reduzir o risco")
+        sugestoes = []
+
+        if entrada["BMI"] > 25:
+            sugestoes.append(f"• Reduzir o IMC (atualmente {entrada['BMI']:.1f}) para abaixo de 25.")
+        if entrada["Waist_Circumference"] > 102:
+            sugestoes.append(f"• Reduzir a circunferência da cintura ({entrada['Waist_Circumference']} cm) para < 102 cm.")
+        if entrada["Fasting_Blood_Glucose"] > 100:
+            sugestoes.append(f"• Reduzir a glicose de jejum ({entrada['Fasting_Blood_Glucose']} mg/dL) para < 100 mg/dL.")
+        if entrada["HbA1c"] > 5.7:
+            sugestoes.append(f"• Reduzir HbA1c ({entrada['HbA1c']}%) para < 5.7%.")
+        if entrada["Blood_Pressure_Systolic"] > 130:
+            sugestoes.append(f"• Reduzir pressão sistólica ({entrada['Blood_Pressure_Systolic']} mmHg) para < 130 mmHg.")
+        if entrada["Blood_Pressure_Diastolic"] > 85:
+            sugestoes.append(f"• Reduzir pressão diastólica ({entrada['Blood_Pressure_Diastolic']} mmHg) para < 85 mmHg.")
+        if entrada["Cholesterol_Total"] > 200:
+            sugestoes.append(f"• Reduzir colesterol total ({entrada['Cholesterol_Total']} mg/dL) para < 200 mg/dL.")
+        if entrada["Cholesterol_LDL"] > 130:
+            sugestoes.append(f"• Reduzir colesterol LDL ({entrada['Cholesterol_LDL']} mg/dL) para < 130 mg/dL.")
+        if entrada["Cholesterol_HDL"] < 40:
+            sugestoes.append(f"• Aumentar colesterol HDL ({entrada['Cholesterol_HDL']} mg/dL) para > 40 mg/dL.")
+        if entrada["GGT"] > 50:
+            sugestoes.append(f"• Reduzir GGT ({entrada['GGT']} U/L) para < 50 U/L.")
+        if entrada["Serum_Urate"] > 7.0:
+            sugestoes.append(f"• Reduzir ácido úrico ({entrada['Serum_Urate']} mg/dL) para < 7.0 mg/dL.")
+        if entrada["Dietary_Intake_Calories"] > 2500:
+            sugestoes.append(f"• Reduzir ingestão calórica ({entrada['Dietary_Intake_Calories']} kcal) para ~2000–2500 kcal.")
+
+        if sugestoes:
+            for s in sugestoes:
+                st.markdown(s)
+        else:
+            st.markdown("✅ Nenhuma recomendação específica.")
+
+        # Histórico
+        historico_path = "historico_predicoes.csv"
+        if os.path.exists(historico_path):
+            historico = pd.read_csv(historico_path)
+        else:
+            historico = pd.DataFrame(columns=[
+                "Idade", "IMC", "Glicose", "HbA1c", "LDL", "Risco_Diabetes(%)", "DataHora"
+            ])
+
+        novo_registro = {
+            "Idade": entrada["Age"],
+            "IMC": entrada["BMI"],
+            "Glicose": entrada["Fasting_Blood_Glucose"],
+            "HbA1c": entrada["HbA1c"],
+            "LDL": entrada["Cholesterol_LDL"],
+            "Risco_Diabetes(%)": prob_diabetes,
+            "DataHora": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
+        historico = pd.concat([historico, pd.DataFrame([novo_registro])], ignore_index=True)
+        historico.to_csv(historico_path, index=False)
+
 except Exception as e:
     st.error(f"Erro na predição: {e}")
 
-# (conteúdo omitido para brevidade, será reconstruído como antes)
+# Mostrar histórico
+if st.checkbox("📖 Ver histórico de predições"):
+    historico = pd.read_csv("historico_predicoes.csv")
+    st.dataframe(historico)

@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import joblib
@@ -8,7 +7,7 @@ from datetime import datetime
 
 st.set_page_config(page_title="Preditor de Diabetes", page_icon="🩺")
 
-# URLs dos arquivos
+# URLs dos arquivos treinados
 url_modelo = "https://drive.google.com/uc?export=download&id=1bnOTS_hydnw6M925PqJCSqVoniQmT_BE"
 url_scaler = "https://drive.google.com/uc?export=download&id=14B1EO0nN_L2flEJzZBNESTAjDiXEdJ5O"
 
@@ -91,33 +90,30 @@ try:
         st.write(f"🔹 Sem diabetes: {prob_normal}%")
         st.write(f"🔸 Com diabetes: {prob_diabetes}%")
 
+        importancias = modelo.feature_importances_
+        df_importancia = pd.DataFrame({
+            'feature': colunas_modelo,
+            'importancia': importancias
+        })
+        top_features = df_importancia.sort_values(by="importancia", ascending=False).head(5)
+        st.subheader("📊 Variáveis mais influentes")
+        st.table(top_features)
+
         st.subheader("💡 Sugestões para reduzir o risco")
         sugestoes = []
 
         if entrada["BMI"] > 25:
             sugestoes.append(f"• Reduzir o IMC (atualmente {entrada['BMI']:.1f}) para abaixo de 25.")
         if entrada["Waist_Circumference"] > 102:
-            sugestoes.append(f"• Reduzir a circunferência da cintura ({entrada['Waist_Circumference']} cm) para < 102 cm.")
+            sugestoes.append(f"• Reduzir a cintura ({entrada['Waist_Circumference']} cm) para < 102 cm.")
         if entrada["Fasting_Blood_Glucose"] > 100:
-            sugestoes.append(f"• Reduzir a glicose de jejum ({entrada['Fasting_Blood_Glucose']} mg/dL) para < 100 mg/dL.")
+            sugestoes.append(f"• Reduzir glicose jejum ({entrada['Fasting_Blood_Glucose']}) para < 100.")
         if entrada["HbA1c"] > 5.7:
             sugestoes.append(f"• Reduzir HbA1c ({entrada['HbA1c']}%) para < 5.7%.")
-        if entrada["Blood_Pressure_Systolic"] > 130:
-            sugestoes.append(f"• Reduzir pressão sistólica ({entrada['Blood_Pressure_Systolic']} mmHg) para < 130 mmHg.")
-        if entrada["Blood_Pressure_Diastolic"] > 85:
-            sugestoes.append(f"• Reduzir pressão diastólica ({entrada['Blood_Pressure_Diastolic']} mmHg) para < 85 mmHg.")
-        if entrada["Cholesterol_Total"] > 200:
-            sugestoes.append(f"• Reduzir colesterol total ({entrada['Cholesterol_Total']} mg/dL) para < 200 mg/dL.")
         if entrada["Cholesterol_LDL"] > 130:
-            sugestoes.append(f"• Reduzir colesterol LDL ({entrada['Cholesterol_LDL']} mg/dL) para < 130 mg/dL.")
+            sugestoes.append(f"• Reduzir LDL ({entrada['Cholesterol_LDL']}) para < 130.")
         if entrada["Cholesterol_HDL"] < 40:
-            sugestoes.append(f"• Aumentar colesterol HDL ({entrada['Cholesterol_HDL']} mg/dL) para > 40 mg/dL.")
-        if entrada["GGT"] > 50:
-            sugestoes.append(f"• Reduzir GGT ({entrada['GGT']} U/L) para < 50 U/L.")
-        if entrada["Serum_Urate"] > 7.0:
-            sugestoes.append(f"• Reduzir ácido úrico ({entrada['Serum_Urate']} mg/dL) para < 7.0 mg/dL.")
-        if entrada["Dietary_Intake_Calories"] > 2500:
-            sugestoes.append(f"• Reduzir ingestão calórica ({entrada['Dietary_Intake_Calories']} kcal) para ~2000–2500 kcal.")
+            sugestoes.append(f"• Aumentar HDL ({entrada['Cholesterol_HDL']}) para > 40.")
 
         if sugestoes:
             for s in sugestoes:
@@ -149,7 +145,7 @@ try:
 except Exception as e:
     st.error(f"Erro na predição: {e}")
 
-# Mostrar histórico
 if st.checkbox("📖 Ver histórico de predições"):
     historico = pd.read_csv("historico_predicoes.csv")
     st.dataframe(historico)
+    st.line_chart(historico.set_index("DataHora")[["Risco_Diabetes(%)"]])

@@ -6,30 +6,7 @@ import requests
 import os
 from datetime import datetime
 
-# ✅ DEVE VIR PRIMEIRO
-st.set_page_config(page_title="Preditor de Diabetes", page_icon="🩺")
 
-# --- LOGIN FIXO LOCAL ---
-usuarios = {
-    "admin": "1234",
-    "usuario": "senha123"
-}
-
-if "logado" not in st.session_state:
-    st.session_state.logado = False
-
-if not st.session_state.logado:
-    st.title("🔐 Login")
-    usuario = st.text_input("Usuário")
-    senha = st.text_input("Senha", type="password")
-
-    if st.button("Entrar"):
-        if usuario in usuarios and usuarios[usuario] == senha:
-            st.session_state.logado = True
-            st.success("Login realizado com sucesso.")
-        else:
-            st.error("❌ Usuário ou senha incorretos.")
-    st.stop()
 
 st.set_page_config(page_title="Preditor de Diabetes", page_icon="🩺")
 

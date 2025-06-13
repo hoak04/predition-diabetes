@@ -23,7 +23,7 @@ if not st.session_state.logado:
     if st.button("Entrar"):
         if usuario in usuarios and usuarios[usuario] == senha:
             st.session_state.logado = True
-            st.experimental_rerun()
+            st.success("Login bem-sucedido. Recarregue a página manualmente se necessário.")
         else:
             st.error("❌ Usuário ou senha incorretos.")
     st.stop()

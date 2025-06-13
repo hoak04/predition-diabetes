@@ -1,9 +1,37 @@
+
 import streamlit as st
 import pandas as pd
 import joblib
 import requests
 import os
 from datetime import datetime
+
+# --- LOGIN FIXO LOCAL ---
+usuarios = {
+    "admin": "1234",
+    "usuario": "senha123"
+}
+
+if "logado" not in st.session_state:
+    st.session_state.logado = False
+
+if not st.session_state.logado:
+    st.title("🔐 Login")
+    usuario = st.text_input("Usuário")
+    senha = st.text_input("Senha", type="password")
+
+    if st.button("Entrar"):
+        if usuario in usuarios and usuarios[usuario] == senha:
+            st.session_state.logado = True
+            st.experimental_rerun()
+        else:
+            st.error("❌ Usuário ou senha incorretos.")
+    st.stop()
+
+# O restante do código vem aqui (mantido fora por simplicidade)
+st.title("🩺 Preditor de Diabetes")
+st.write("🔒 Login realizado com sucesso. Aqui continuaria o app...")
+
 
 st.set_page_config(page_title="Preditor de Diabetes", page_icon="🩺")
 

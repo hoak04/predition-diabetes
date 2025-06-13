@@ -27,7 +27,6 @@ if not st.session_state.logado:
         else:
             st.error("❌ Usuário ou senha incorretos.")
     st.stop()
-
 # O restante do código vem aqui (mantido fora por simplicidade)
 st.title("🩺 Preditor de Diabetes")
 st.write("🔒 Login realizado com sucesso. Aqui continuaria o app...")

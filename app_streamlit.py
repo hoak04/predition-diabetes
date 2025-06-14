@@ -101,8 +101,8 @@ try:
         st.subheader("📊 SHAP - explicação da predição")
         fig, ax = plt.subplots()
         shap.plots._waterfall.waterfall_legacy(
-            explainer.expected_value[1],
-            shap_values[1][0],
+            explainer.expected_value,
+            shap_values[0],
             df.iloc[0],
             max_display=10,
             show=False

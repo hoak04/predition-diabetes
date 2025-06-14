@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import joblib
@@ -6,11 +5,31 @@ import requests
 import os
 from datetime import datetime
 
-
-
+# ✅ Deve ser a primeira chamada Streamlit
 st.set_page_config(page_title="Preditor de Diabetes", page_icon="🩺")
 
-# URLs dos arquivos treinados
+# 🔐 LOGIN FIXO LOCAL
+usuarios = {
+    "admin": "1234",
+    "usuario": "senha123"
+}
+
+if "logado" not in st.session_state:
+    st.session_state.logado = False
+
+if not st.session_state.logado:
+    st.title("🔐 Login")
+    usuario = st.text_input("Usuário")
+    senha = st.text_input("Senha", type="password")
+    if st.button("Entrar"):
+        if usuario in usuarios and usuarios[usuario] == senha:
+            st.session_state.logado = True
+            st.success("Login realizado com sucesso.")
+        else:
+            st.error("❌ Usuário ou senha incorretos.")
+    st.stop()
+
+# 🔁 App após login
 url_modelo = "https://drive.google.com/uc?export=download&id=1bnOTS_hydnw6M925PqJCSqVoniQmT_BE"
 url_scaler = "https://drive.google.com/uc?export=download&id=14B1EO0nN_L2flEJzZBNESTAjDiXEdJ5O"
 
@@ -37,6 +56,7 @@ colunas_modelo = [
     "Smoking_Status_Current", "Smoking_Status_Former", "Smoking_Status_Never"
 ]
 
+# 🎯 Interface principal
 st.title("🩺 Preditor de Diabetes")
 
 entrada = {
@@ -74,17 +94,18 @@ entrada = {
 df = pd.DataFrame([entrada])
 df = df.reindex(columns=colunas_modelo, fill_value=0)
 
-st.subheader("🔎 Dados para predição")
-st.write(df)
+st.subheader("🔎 Dados de entrada")
+st.dataframe(df)
 
+# 🔮 Predição
 try:
     dados_normalizados = scaler.transform(df)
-
     if st.button("🔍 Prever"):
         proba = modelo.predict_proba(dados_normalizados)[0]
         prob_diabetes = round(proba[1] * 100, 2)
         prob_normal = round(proba[0] * 100, 2)
 
+        st.subheader("📈 Resultado")
         if prob_diabetes >= 50:
             st.error(f"⚠️ Chance de diabetes: {prob_diabetes}%")
         else:
@@ -93,38 +114,32 @@ try:
         st.write(f"🔹 Sem diabetes: {prob_normal}%")
         st.write(f"🔸 Com diabetes: {prob_diabetes}%")
 
+        # Variáveis mais influentes
         importancias = modelo.feature_importances_
-        df_importancia = pd.DataFrame({
-            'feature': colunas_modelo,
-            'importancia': importancias
-        })
-        top_features = df_importancia.sort_values(by="importancia", ascending=False).head(5)
+        df_imp = pd.DataFrame({"feature": colunas_modelo, "importancia": importancias})
         st.subheader("📊 Variáveis mais influentes")
-        st.table(top_features)
+        st.table(df_imp.sort_values(by="importancia", ascending=False).head(5))
 
+        # Sugestões personalizadas
         st.subheader("💡 Sugestões para reduzir o risco")
         sugestoes = []
-
         if entrada["BMI"] > 25:
-            sugestoes.append(f"• Reduzir o IMC (atualmente {entrada['BMI']:.1f}) para abaixo de 25.")
-        if entrada["Waist_Circumference"] > 102:
-            sugestoes.append(f"• Reduzir a cintura ({entrada['Waist_Circumference']} cm) para < 102 cm.")
+            sugestoes.append(f"• Reduzir IMC ({entrada['BMI']:.1f}) para < 25.")
         if entrada["Fasting_Blood_Glucose"] > 100:
-            sugestoes.append(f"• Reduzir glicose jejum ({entrada['Fasting_Blood_Glucose']}) para < 100.")
+            sugestoes.append(f"• Glicose jejum ({entrada['Fasting_Blood_Glucose']}) > 100 mg/dL.")
         if entrada["HbA1c"] > 5.7:
-            sugestoes.append(f"• Reduzir HbA1c ({entrada['HbA1c']}%) para < 5.7%.")
+            sugestoes.append(f"• HbA1c ({entrada['HbA1c']}%) > 5.7.")
         if entrada["Cholesterol_LDL"] > 130:
             sugestoes.append(f"• Reduzir LDL ({entrada['Cholesterol_LDL']}) para < 130.")
-        if entrada["Cholesterol_HDL"] < 40:
-            sugestoes.append(f"• Aumentar HDL ({entrada['Cholesterol_HDL']}) para > 40.")
-
+        if entrada["Waist_Circumference"] > 102:
+            sugestoes.append(f"• Reduzir cintura ({entrada['Waist_Circumference']} cm) para < 102 cm.")
         if sugestoes:
             for s in sugestoes:
                 st.markdown(s)
         else:
             st.markdown("✅ Nenhuma recomendação específica.")
 
-        # Histórico
+        # 📚 Histórico
         historico_path = "historico_predicoes.csv"
         if os.path.exists(historico_path):
             historico = pd.read_csv(historico_path)
@@ -133,7 +148,7 @@ try:
                 "Idade", "IMC", "Glicose", "HbA1c", "LDL", "Risco_Diabetes(%)", "DataHora"
             ])
 
-        novo_registro = {
+        novo = {
             "Idade": entrada["Age"],
             "IMC": entrada["BMI"],
             "Glicose": entrada["Fasting_Blood_Glucose"],
@@ -142,12 +157,13 @@ try:
             "Risco_Diabetes(%)": prob_diabetes,
             "DataHora": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         }
-        historico = pd.concat([historico, pd.DataFrame([novo_registro])], ignore_index=True)
+        historico = pd.concat([historico, pd.DataFrame([novo])], ignore_index=True)
         historico.to_csv(historico_path, index=False)
 
 except Exception as e:
-    st.error(f"Erro na predição: {e}")
+    st.error(f"Erro: {e}")
 
+# 🔁 Exibir histórico
 if st.checkbox("📖 Ver histórico de predições"):
     historico = pd.read_csv("historico_predicoes.csv")
     st.dataframe(historico)
